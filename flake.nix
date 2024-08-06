@@ -18,6 +18,7 @@
           python312Packages.jupyterlab
           python312Packages.pandas
           python312Packages.numpy
+          python312Packages.scipy
           python312Packages.networkx
           python312Packages.matplotlib
           python312Packages.plotly

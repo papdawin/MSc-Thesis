@@ -4,9 +4,9 @@ import networkx as nx
 import plotly.graph_objects as go
 from matplotlib import pyplot as plt
 
-country_codes = pd.read_csv("./Datasets/BACI_HS92_V202401/country_codes_V202401.csv")
-product_codes = pd.read_csv("./Datasets/BACI_HS92_V202401/product_codes_HS92_V202401.csv")
-data_2022 = pd.read_csv("./Datasets/BACI_HS92_V202401/BACI_HS92_Y2022_V202401.csv")
+country_codes = pd.read_csv("./Datasets/BACI_HS92_V202401b/country_codes_V202401b.csv")
+product_codes = pd.read_csv("./Datasets/BACI_HS92_V202401b/product_codes_HS92_V202401b.csv")
+data_2022 = pd.read_csv("./Datasets/BACI_HS92_V202401b/BACI_HS92_Y1995_V202401b.csv")
 
 print(data_2022.head())
 print(data_2022.info())
