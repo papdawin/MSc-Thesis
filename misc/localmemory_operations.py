@@ -11,6 +11,15 @@ def load_database_to_graph(csv_path):
     G = nx.from_pandas_adjacency(dataf)
     return G
 
+def load_data_to_dataframe(csv_path):
+    dataf = pd.read_csv(csv_path, index_col=0)
+
+    num_of_entries = len(dataf.index) - 2
+    dataf = dataf.iloc[:num_of_entries - 1, :num_of_entries]
+
+    return dataf
 
 
-
+def load_transformed_data_to_dataframe(csv_path):
+    dataf = pd.read_csv(csv_path, index_col=0)
+    return dataf
