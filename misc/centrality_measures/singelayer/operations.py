@@ -1,5 +1,6 @@
 import networkx as nx
 import pandas as pd
+import numpy as np
 
 def create_graph_from_dataframe(df):
     num_of_entries = len(df.index) - 2

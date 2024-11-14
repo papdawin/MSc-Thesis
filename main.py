@@ -16,14 +16,15 @@ password = "Admin123"
 # G_loaded = load_graph_from_neo4j(driver)
 
 
-df = load_transformed_data_to_dataframe("./Datasets/OECD_Transformed/OECD_1995.csv")
-# calculate_multilayer_network_indicators(df, 'sector')
-calculate_multilayer_network_indicators(df, 'country')
-# df = load_data_to_dataframe("./Datasets/OECD_Original/ICIO2023_1995.csv")
-# calculate_singe_layer_indicators(df)
+transformed_df = load_transformed_data_to_dataframe("./Datasets/OECD_Transformed/OECD_1995.csv")
+# original_df = load_data_to_dataframe("./Datasets/OECD_Original/ICIO2023_1995.csv")
+# calculate_multilayer_network_indicators(transformed_df, 'sector')
+# calculate_multilayer_network_indicators(transformed_df, 'country')
 
+# original_df = load_data_to_dataframe("./Datasets/OECD_Original/ICIO2023_1995.csv")
+# calculate_singe_layer_indicators(original_df)
 
-
+visualize_multilayer_graph(transformed_df)
 
 
 

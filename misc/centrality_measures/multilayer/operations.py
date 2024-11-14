@@ -1,6 +1,10 @@
 import pandas as pd
 import networkx as nx
+import numpy as np
+import matplotlib.pyplot as plt
 
+from mpl_toolkits.mplot3d import Axes3D
+from mpl_toolkits.mplot3d.art3d import Line3DCollection
 
 def extract_sector(col_name, part):
     return col_name.split('_')[part]

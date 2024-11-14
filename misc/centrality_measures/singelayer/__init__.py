@@ -11,6 +11,3 @@ def calculate_singe_layer_indicators(df):
     print(edge_betweenness_centrality(graph))
     print(pagerank(graph))
     print(density(graph))
-
-def visualize_singe_layer_indicators(df):
-    return 0

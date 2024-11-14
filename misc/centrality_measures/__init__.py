@@ -1,2 +1,2 @@
-from .multilayer import calculate_multilayer_network_indicators
+from .multilayer import calculate_multilayer_network_indicators, visualize_multilayer_graph
 from .singelayer import calculate_singe_layer_indicators
