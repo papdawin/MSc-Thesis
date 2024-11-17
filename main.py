@@ -4,6 +4,7 @@ import plotly.express as px
 import matplotlib.pyplot as plt
 
 from misc import *
+from misc.centrality_measures.multilayer import get_network_country_yearly
 
 uri = "neo4j://localhost"
 username = "neo4j"
@@ -16,15 +17,12 @@ password = "Admin123"
 # G_loaded = load_graph_from_neo4j(driver)
 
 
-transformed_df = load_transformed_data_to_dataframe("./Datasets/OECD_Transformed/OECD_1995.csv")
-# original_df = load_data_to_dataframe("./Datasets/OECD_Original/ICIO2023_1995.csv")
-# calculate_multilayer_network_indicators(transformed_df, 'sector')
-# calculate_multilayer_network_indicators(transformed_df, 'country')
+# introductory_graph()
+# degree_centrality()
 
-# original_df = load_data_to_dataframe("./Datasets/OECD_Original/ICIO2023_1995.csv")
+# original_df = load_data_to_dataframe("./Datasets/OECD_Original/ICIO2023_2020.csv")
+# original_df2 = load_data_to_dataframe("./Datasets/OECD_Original/ICIO2023_2020.csv")
 # calculate_singe_layer_indicators(original_df)
-
-visualize_multilayer_graph(transformed_df)
 
 
 

@@ -19,7 +19,7 @@ def remove_non_weighed_edges(graph):
 def aggregate_by_sector(df):
     df_aggregated = df.groupby(['Exporter_sector', 'Importer_sector']).agg({'Value (million USD)': 'sum'})
     df_aggregated = df_aggregated.reset_index()
-    df_aggregated = df.rename(columns={'Value (million USD)': 'weight'})
+    df_aggregated = df_aggregated.rename(columns={'Value (million USD)': 'weight'})
     graph = nx.from_pandas_edgelist(df_aggregated, source='Exporter_sector', target='Importer_sector',
                             edge_attr='weight', create_using=nx.DiGraph())
 

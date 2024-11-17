@@ -7,7 +7,13 @@ from ... import load_csv
 
 
 # Works with original data
+def viz(data):
+    fig = px.bar(x=list(data.keys()), y=list(data.values()))
+    fig.show()
+
+
 def calculate_multilayer_network_indicators(df, selector='sector'):
+    df = df[df['Value (million USD)'] > 1]
     if selector == 'sector':
         print("Calculating indicators for sector-layered network...")
         graph = aggregate_by_sector(df)
@@ -16,19 +22,32 @@ def calculate_multilayer_network_indicators(df, selector='sector'):
         graph = aggregate_by_country(df)
     else:
         raise Exception('Invalid selector')
-    print(betweenness_centrality(graph))
-    print(closeness_centrality(graph))
-    print(degree_centrality(graph))
-    print(edge_betweenness_centrality(graph))
-    print(pagerank(graph))
+
+
+    # bc = betweenness_centrality(graph)
+    # print(bc)
+    # viz(bc)
+    # cc = closeness_centrality(graph)
+    # viz(cc)
+    dc = degree_centrality(graph)
+    # print(dc)
+    # viz(dc)
+    return dc
+    # # ebc = edge_betweenness_centrality(graph)
+    # # viz(ebc)
+    # pr = pagerank(graph)
+    # viz(pr)
     print("\n")
 
 
-# Works with transformed data
-def visualize_multilayer_graph(df):
+def get_network_country_yearly(df):
+    # df = df[df['Value (million USD)'] > 1]
+    graph = aggregate_by_country(df)
+    dc = degree_centrality(graph)
+    return dc
 
-    sector_map = load_csv("./Datasets/sector_LUT.csv", "\ufeffID", "Code")
-    country_map = load_csv("./Datasets/country_LUT.csv", "\ufeffID", "Code")
+# Works with transformed data
+def visualize_multilayer_graph(df, sector_map, country_map):
     # Only consider routes with at least $1M trade value
     df = df[df['Value (million USD)'] > 1]
     # Countries to display
