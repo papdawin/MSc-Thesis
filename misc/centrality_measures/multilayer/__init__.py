@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from .operations import *
 from .calculate_indicators import *
 from .visualizations import visualize_dataframe
-from ... import load_csv
+from ... import load_csv, load_transformed_data_to_dataframe
 
 
 # Works with original data
@@ -24,21 +24,33 @@ def calculate_multilayer_network_indicators(df, selector='sector'):
         raise Exception('Invalid selector')
 
 
-    # bc = betweenness_centrality(graph)
-    # print(bc)
-    # viz(bc)
+    bc = betweenness_centrality(graph)
+    print(bc)
+    viz(bc)
     # cc = closeness_centrality(graph)
     # viz(cc)
-    dc = degree_centrality(graph)
+    # dc = degree_centrality(graph)
     # print(dc)
     # viz(dc)
-    return dc
+    # return dc
     # # ebc = edge_betweenness_centrality(graph)
     # # viz(ebc)
     # pr = pagerank(graph)
     # viz(pr)
     print("\n")
 
+def get_hc_by_year(year):
+    df = load_transformed_data_to_dataframe(f"./Datasets/OECD_Transformed/OECD_{year}.csv")
+    df = df[df['Value (million USD)'] > 1]
+    graph = aggregate_by_country(df)
+    return closeness_centrality(graph)
+
+
+def get_bc_by_year(year):
+    df = load_transformed_data_to_dataframe(f"./Datasets/OECD_Transformed/OECD_{year}.csv")
+    df = df[df['Value (million USD)'] > 1]
+    graph = aggregate_by_country(df)
+    return betweenness_centrality(graph)
 
 def get_network_country_yearly(df):
     # df = df[df['Value (million USD)'] > 1]

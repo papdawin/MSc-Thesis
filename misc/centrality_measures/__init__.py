@@ -1,7 +1,7 @@
 from .multilayer import *
 from .singelayer import *
-from .. import load_transformed_data_to_dataframe
-
+from .. import load_transformed_data_to_dataframe, load_csv
+from plotly.subplots import make_subplots
 
 sector_map = load_csv("./Datasets/sector_LUT.csv", "\ufeffID", "Code")
 country_map = load_csv("./Datasets/country_LUT.csv", "\ufeffID", "Code")
@@ -12,9 +12,10 @@ def introductory_graph():
     visualize_multilayer_graph(df, sector_map, country_map)
 
 
-
 def first_graph():
-    pass
+    df = load_transformed_data_to_dataframe("./Datasets/OECD_Original/ICIO2023_1995.csv")
+    df2 = load_transformed_data_to_dataframe("./Datasets/OECD_Original/ICIO2023_2020.csv")
+    compare_degree_centralities(df, df2)
 
 
 def second_graph():
@@ -31,9 +32,54 @@ def second_graph():
     fig = px.imshow(data, aspect="auto")
     fig.show()
 
-
-def degree_centrality():
-    first_graph()
-    second_graph()
+import pandas as pd
+import plotly.graph_objects as go
 
 
+def third_graph():
+    resdf = []
+    for year in range(1995, 2021):
+        bc = get_bc_by_year(year)
+        resdf.append(bc)
+    df = pd.DataFrame(resdf)
+    df = df.rename(columns=country_map)
+
+    # brics_countries = ["BRA", "RUS", "IND", "CHN", "SAU"]
+    # df = df[brics_countries]
+    # print(df)
+    colonizers = ["ESP", "FRA", "GBR", "PRT", "NLD", "BEL", "DEU", "ITA", "USA", "JPN", "CHN"]
+    non_colonizer_cols = [col for col in df.columns if col not in colonizers + ["WXD", "ROW"]]
+    df['Average'] = df[non_colonizer_cols].mean(axis=1)
+    df_n = df[colonizers]
+    df_n['Average'] = df['Average']
+    df_n.index += 1995
+
+    fig = px.line(df_n, x=df_n.index, y=df_n.columns, title='Former colonizer countries',)
+    fig.update_layout(
+        xaxis_title="Year",
+        yaxis_title="Betweenness centrality value",
+        legend_title="Country"
+    )
+    fig.show()
+
+
+def fourth_graph():
+    bc = get_hc_by_year(1995)
+    country_bc = {country_map[key]: value for key, value in bc.items()}
+    df_1995 = pd.DataFrame(list(country_bc.items()), columns=["country_code", "bc_value"])
+    bc = get_hc_by_year(2020)
+    country_bc = {country_map[key]: value for key, value in bc.items()}
+    df_2020 = pd.DataFrame(list(country_bc.items()), columns=["country_code", "bc_value"])
+
+    fig = make_subplots(
+        rows=1, cols=2, subplot_titles=['Harmonic centrality in 1995', 'Harmonic centrality in 2020'],
+        specs=[[{'type': 'choropleth'}, {'type': 'choropleth'}]],
+        horizontal_spacing=0.05
+    )
+    fig.add_trace(px.choropleth(df_1995, locations="country_code",
+                        color="bc_value",
+                        hover_name="country_code").data[0], row=1, col=1)
+    fig.add_trace(px.choropleth(df_2020, locations="country_code",
+                                color="bc_value",
+                                hover_name="country_code").data[0], row=1, col=2)
+    fig.show()

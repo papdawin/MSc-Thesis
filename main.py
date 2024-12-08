@@ -19,7 +19,8 @@ password = "Admin123"
 
 # introductory_graph()
 # degree_centrality()
-
+# betweenness_centrality()
+harmonic_centrality()
 # original_df = load_data_to_dataframe("./Datasets/OECD_Original/ICIO2023_2020.csv")
 # original_df2 = load_data_to_dataframe("./Datasets/OECD_Original/ICIO2023_2020.csv")
 # calculate_singe_layer_indicators(original_df)
