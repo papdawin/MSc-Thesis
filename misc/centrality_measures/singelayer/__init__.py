@@ -1,6 +1,7 @@
 from .calculate_indicators import *
 from .operations import *
 from .visualizations import plot_by_continents
+from ... import load_transformed_data_to_dataframe
 
 
 def calculate_singe_layer_indicators(df):
@@ -20,3 +21,12 @@ def compare_degree_centralities(df, df2):
     dc = degree_centrality(graph)
     dc2 = degree_centrality(graph2)
     plot_by_continents(dc, dc2, 1995, 2020)
+
+
+def get_pr_by_year(year):
+    df = load_transformed_data_to_dataframe(f"./Datasets/OECD_Original/ICIO2023_{year}.csv")
+    # df = load_transformed_data_to_dataframe(f"./Datasets/OECD_Transformed/OECD_{year}.csv")
+    # df = df[df['Value (million USD)'] > 1]
+    graph = create_graph_from_dataframe(df)
+
+    return pagerank(graph)

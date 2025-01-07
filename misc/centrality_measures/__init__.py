@@ -1,5 +1,5 @@
-from .multilayer import *
-from .singelayer import *
+from .multilayer import visualize_multilayer_graph, get_network_country_yearly, get_bc_by_year, get_hc_by_year
+from .singelayer import get_pr_by_year
 from .. import load_transformed_data_to_dataframe, load_csv
 from plotly.subplots import make_subplots
 
@@ -83,3 +83,30 @@ def fourth_graph():
                                 color="bc_value",
                                 hover_name="country_code").data[0], row=1, col=2)
     fig.show()
+
+
+import plotly.express as px
+
+
+def fifth_graph():
+    resdf = []
+    for year in range(1995, 2021):
+        pr = get_pr_by_year(year)
+        pr = pd.Series(pr)
+        top_100 = pr.nlargest(50)
+        resdf.append(top_100)
+    df = pd.DataFrame(resdf)
+    melted_df = pd.melt(df, var_name='variable', value_name='value')
+    melted_df['country'] = melted_df['variable'].str[:3]
+    melted_df['category'] = melted_df['variable'].str[4:]
+    years = list(range(1995, 2021)) * (len(melted_df) // len(range(1995, 2021)) + 1)
+    melted_df['year'] = years[:len(melted_df)]
+    countries = melted_df['country'].unique()
+    sectors = melted_df['category'].unique()
+    fig = px.bar(melted_df, x="year", y="value", color="country", text="category")
+    fig.update_layout(title_text="Top 50 PageRank Value Sectors")
+    fig.show()
+
+
+def sixth_graph():
+    pass

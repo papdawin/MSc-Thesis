@@ -52,6 +52,13 @@ def get_bc_by_year(year):
     graph = aggregate_by_country(df)
     return betweenness_centrality(graph)
 
+
+def get_pr_by_year(year):
+    df = load_transformed_data_to_dataframe(f"./Datasets/OECD_Transformed/OECD_{year}.csv")
+    # df = df[df['Value (million USD)'] > 1]
+    graph = aggregate_by_country(df)
+    return pagerank(graph)
+
 def get_network_country_yearly(df):
     # df = df[df['Value (million USD)'] > 1]
     graph = aggregate_by_country(df)

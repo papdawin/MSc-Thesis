@@ -13,3 +13,9 @@ def betweenness_centrality():
 
 def harmonic_centrality():
     fourth_graph()
+
+def page_rank():
+    fifth_graph()
+
+def edge_betweenness_centrality():
+    sixth_graph()
