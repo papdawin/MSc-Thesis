@@ -39,6 +39,7 @@ def calculate_multilayer_network_indicators(df, selector='sector'):
     # viz(pr)
     print("\n")
 
+
 def get_hc_by_year(year):
     df = load_transformed_data_to_dataframe(f"./Datasets/OECD_Transformed/OECD_{year}.csv")
     df = df[df['Value (million USD)'] > 1]
@@ -59,11 +60,20 @@ def get_pr_by_year(year):
     graph = aggregate_by_country(df)
     return pagerank(graph)
 
+
+def get_eb_by_year(year):
+    df = load_transformed_data_to_dataframe(f"./Datasets/OECD_Transformed/OECD_{year}.csv")
+    df = df[df['Value (million USD)'] > 1]
+    graph = aggregate_by_country(df)
+    return edge_betweenness_centrality(graph)
+
+
 def get_network_country_yearly(df):
     # df = df[df['Value (million USD)'] > 1]
     graph = aggregate_by_country(df)
     dc = degree_centrality(graph)
     return dc
+
 
 # Works with transformed data
 def visualize_multilayer_graph(df, sector_map, country_map):

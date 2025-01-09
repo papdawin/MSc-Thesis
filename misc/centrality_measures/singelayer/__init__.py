@@ -25,8 +25,13 @@ def compare_degree_centralities(df, df2):
 
 def get_pr_by_year(year):
     df = load_transformed_data_to_dataframe(f"./Datasets/OECD_Original/ICIO2023_{year}.csv")
-    # df = load_transformed_data_to_dataframe(f"./Datasets/OECD_Transformed/OECD_{year}.csv")
-    # df = df[df['Value (million USD)'] > 1]
     graph = create_graph_from_dataframe(df)
-
     return pagerank(graph)
+
+
+def get_density_by_year(year, filter_insignificant=False):
+    df = load_transformed_data_to_dataframe(f"./Datasets/OECD_Original/ICIO2023_{year}.csv")
+    if filter_insignificant:
+        df = df.clip(lower=0.5)
+    graph = create_graph_from_dataframe(df)
+    return density(graph)

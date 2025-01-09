@@ -1,5 +1,6 @@
-from .multilayer import visualize_multilayer_graph, get_network_country_yearly, get_bc_by_year, get_hc_by_year
-from .singelayer import get_pr_by_year
+from .multilayer import visualize_multilayer_graph, get_network_country_yearly, get_bc_by_year, get_hc_by_year, \
+    get_eb_by_year
+from .singelayer import get_pr_by_year, get_density_by_year
 from .. import load_transformed_data_to_dataframe, load_csv
 from plotly.subplots import make_subplots
 
@@ -109,4 +110,19 @@ def fifth_graph():
 
 
 def sixth_graph():
-    pass
+    bc = get_eb_by_year(1995)
+    print(bc)
+    country_bc = {country_map[key]: value for key, value in bc.items()}
+    df_1995 = pd.DataFrame(list(country_bc.items()), columns=["country_code", "bc_value"])
+    print(df_1995)
+
+
+def seventh_graph():
+    resdf = []
+    year_range = list(range(1995, 2021))
+    for year in year_range:
+        pr = get_density_by_year(year, filter_insignificant=False)
+        resdf.append(pr)
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=year_range, y=resdf, mode='lines+markers', name='Network density'))
+    fig.show()

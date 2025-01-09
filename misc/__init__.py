@@ -19,3 +19,6 @@ def page_rank():
 
 def edge_betweenness_centrality():
     sixth_graph()
+
+def density():
+    seventh_graph()
