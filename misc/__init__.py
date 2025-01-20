@@ -11,14 +11,21 @@ def degree_centrality():
 def betweenness_centrality():
     third_graph()
 
+
 def harmonic_centrality():
     fourth_graph()
+
 
 def page_rank():
     fifth_graph()
 
+
 def edge_betweenness_centrality():
     sixth_graph()
 
+
 def density():
-    seventh_graph()
+    # seventh_graph()
+    # eighth_graph()
+    ninth_graph()
+    # tenth_graph()

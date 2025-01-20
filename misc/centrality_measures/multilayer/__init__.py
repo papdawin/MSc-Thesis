@@ -24,22 +24,6 @@ def calculate_multilayer_network_indicators(df, selector='sector'):
         raise Exception('Invalid selector')
 
 
-    bc = betweenness_centrality(graph)
-    print(bc)
-    viz(bc)
-    # cc = closeness_centrality(graph)
-    # viz(cc)
-    # dc = degree_centrality(graph)
-    # print(dc)
-    # viz(dc)
-    # return dc
-    # # ebc = edge_betweenness_centrality(graph)
-    # # viz(ebc)
-    # pr = pagerank(graph)
-    # viz(pr)
-    print("\n")
-
-
 def get_hc_by_year(year):
     df = load_transformed_data_to_dataframe(f"./Datasets/OECD_Transformed/OECD_{year}.csv")
     df = df[df['Value (million USD)'] > 1]
@@ -65,6 +49,20 @@ def get_eb_by_year(year):
     df = load_transformed_data_to_dataframe(f"./Datasets/OECD_Transformed/OECD_{year}.csv")
     df = df[df['Value (million USD)'] > 1]
     graph = aggregate_by_country(df)
+    return edge_betweenness_centrality(graph)
+
+
+def get_density_by_year_by_country(year, country_ID):
+    df = load_transformed_data_to_dataframe(f"./Datasets/OECD_Transformed/OECD_{year}.csv")
+    df = df[df['Value (million USD)'] > 1]
+    graph = filter_by_country(df, country_ID)
+    return density(graph)
+
+
+def get_density_by_year_by_sector(year, sector_ID):
+    df = load_transformed_data_to_dataframe(f"./Datasets/OECD_Transformed/OECD_{year}.csv")
+    df = df[df['Value (million USD)'] > 1]
+    graph = filter_by_sector(df, sector_ID)
     return edge_betweenness_centrality(graph)
 
 

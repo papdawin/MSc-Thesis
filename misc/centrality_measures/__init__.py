@@ -1,5 +1,5 @@
 from .multilayer import visualize_multilayer_graph, get_network_country_yearly, get_bc_by_year, get_hc_by_year, \
-    get_eb_by_year
+    get_eb_by_year, get_density_by_year_by_country
 from .singelayer import get_pr_by_year, get_density_by_year
 from .. import load_transformed_data_to_dataframe, load_csv
 from plotly.subplots import make_subplots
@@ -126,3 +126,46 @@ def seventh_graph():
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=year_range, y=resdf, mode='lines+markers', name='Network density'))
     fig.show()
+
+
+def eighth_graph():
+    resdf = []
+    year_range = list(range(1995, 2021))
+    country_list = [10, 13, 20, 26, 27, 32, 33, 37, 39, 42]
+    for year in year_range:
+        subres = []
+        for country in country_list:
+            density = get_density_by_year_by_country(year, country)
+            subres.append(density)
+        resdf.append(subres)
+    df = pd.DataFrame(resdf)
+    print(df)
+    df_transposed = df.T
+    print(df_transposed)
+    fig = go.Figure()
+    for idx, year_df in df_transposed.iterrows():
+        fig.add_trace(go.Scatter(x=year_range, y=year_df, mode='lines+markers', name=country_map[country_list[idx]]))
+    fig.show()
+
+
+def ninth_graph():
+    resdf = []
+    year_range = list(range(1995, 2021))
+    # sector_list = [9, 17, 18, 19, 20, 21, 23, 24, 25, 34]
+    sector_list = list(range(1, 46))
+    for year in year_range:
+        subres = []
+        for country in sector_list:
+            density = get_density_by_year_by_country(year, country)
+            subres.append(density)
+        resdf.append(subres)
+    df = pd.DataFrame(resdf)
+    df_transposed = df.T
+    fig = go.Figure()
+    for idx, year_df in df_transposed.iterrows():
+        fig.add_trace(go.Scatter(x=year_range, y=year_df, mode='lines+markers', name=sector_map[sector_list[idx]]))
+    fig.show()
+
+
+def tenth_graph():
+    pass

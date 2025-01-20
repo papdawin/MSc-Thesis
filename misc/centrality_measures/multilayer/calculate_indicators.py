@@ -36,3 +36,9 @@ def pagerank(graph):
     graph = remove_loop_edges(graph)
     centrality_values = nx.pagerank(graph)
     return centrality_values
+
+
+def density(graph):
+    graph = remove_loop_edges(graph)
+    network_density = nx.density(graph)
+    return network_density
