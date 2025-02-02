@@ -37,8 +37,10 @@ def aggregate_by_country(df):
     reduced_graph = remove_non_weighed_edges(graph)
     return reduced_graph
 
+# Intralayer
 
-def filter_by_sector(df, sector):
+
+def filter_by_sector_intralayer(df, sector):
     df_filtered = df[(df['Exporter_sector'] == sector) | (df['Importer_sector'] == sector)]
     df_filtered = df_filtered.rename(columns={'Value (million USD)': 'weight'})
     graph = nx.from_pandas_edgelist(df_filtered, source='Exporter_sector', target='Importer_sector',
@@ -48,8 +50,30 @@ def filter_by_sector(df, sector):
     return reduced_graph
 
 
-def filter_by_country(df, country):
+def filter_by_country_intralayer(df, country):
     df_filtered = df[(df['Exporter_country'] == country) | (df['Importer_country'] == country)]
+    df_filtered = df_filtered.rename(columns={'Value (million USD)': 'weight'})
+    graph = nx.from_pandas_edgelist(df_filtered, source='Exporter_country', target='Importer_country',
+                                    edge_attr='weight', create_using=nx.DiGraph())
+
+    reduced_graph = remove_non_weighed_edges(graph)
+    return reduced_graph
+
+# Interlayer
+
+
+def filter_by_sector_interlayer(df, sector):
+    df_filtered = df[(df['Exporter_sector'] == sector) | (df['Importer_sector'] != sector)]
+    df_filtered = df_filtered.rename(columns={'Value (million USD)': 'weight'})
+    graph = nx.from_pandas_edgelist(df_filtered, source='Exporter_sector', target='Importer_sector',
+                                    edge_attr='weight', create_using=nx.DiGraph())
+
+    reduced_graph = remove_non_weighed_edges(graph)
+    return reduced_graph
+
+
+def filter_by_country_interlayer(df, country):
+    df_filtered = df[(df['Exporter_country'] == country) | (df['Importer_country'] != country)]
     df_filtered = df_filtered.rename(columns={'Value (million USD)': 'weight'})
     graph = nx.from_pandas_edgelist(df_filtered, source='Exporter_country', target='Importer_country',
                                     edge_attr='weight', create_using=nx.DiGraph())

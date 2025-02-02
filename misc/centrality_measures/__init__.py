@@ -1,6 +1,6 @@
 from .multilayer import visualize_multilayer_graph, get_network_country_yearly, get_bc_by_year, get_hc_by_year, \
-    get_eb_by_year, get_density_by_year_by_country
-from .singelayer import get_pr_by_year, get_density_by_year
+    get_eb_by_year, get_density_by_year_by_country, get_density_by_year_by_sector
+from .singelayer import get_pr_by_year, get_density_by_year, compare_degree_centralities
 from .. import load_transformed_data_to_dataframe, load_csv
 from plotly.subplots import make_subplots
 
@@ -128,14 +128,15 @@ def seventh_graph():
     fig.show()
 
 
-def eighth_graph():
+def eighth_graph(intralayer=True):
     resdf = []
     year_range = list(range(1995, 2021))
-    country_list = [10, 13, 20, 26, 27, 32, 33, 37, 39, 42]
+    # country_list = [10, 13, 20, 26, 27, 32, 33, 37, 39, 42]
+    country_list = list(range(1, 77))
     for year in year_range:
         subres = []
         for country in country_list:
-            density = get_density_by_year_by_country(year, country)
+            density = get_density_by_year_by_country(year, country, intralayer)
             subres.append(density)
         resdf.append(subres)
     df = pd.DataFrame(resdf)
@@ -148,15 +149,15 @@ def eighth_graph():
     fig.show()
 
 
-def ninth_graph():
+def ninth_graph(intralayer=True):
     resdf = []
     year_range = list(range(1995, 2021))
-    # sector_list = [9, 17, 18, 19, 20, 21, 23, 24, 25, 34]
+    # sector_list = [7, 9, 15, 30, 38, 35, 40, 43, 44, 41, 24]
     sector_list = list(range(1, 46))
     for year in year_range:
         subres = []
-        for country in sector_list:
-            density = get_density_by_year_by_country(year, country)
+        for sector in sector_list:
+            density = get_density_by_year_by_sector(year, sector, intralayer)
             subres.append(density)
         resdf.append(subres)
     df = pd.DataFrame(resdf)

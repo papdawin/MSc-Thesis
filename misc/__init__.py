@@ -25,7 +25,9 @@ def edge_betweenness_centrality():
 
 
 def density():
-    # seventh_graph()
-    # eighth_graph()
-    ninth_graph()
+    seventh_graph()
+    eighth_graph(intralayer=True)
+    ninth_graph(intralayer=True)
+    eighth_graph(intralayer=False)
+    ninth_graph(intralayer=False)
     # tenth_graph()

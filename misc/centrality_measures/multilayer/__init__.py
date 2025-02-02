@@ -52,18 +52,25 @@ def get_eb_by_year(year):
     return edge_betweenness_centrality(graph)
 
 
-def get_density_by_year_by_country(year, country_ID):
+def get_density_by_year_by_country(year, country_ID, intralayer=True):
     df = load_transformed_data_to_dataframe(f"./Datasets/OECD_Transformed/OECD_{year}.csv")
     df = df[df['Value (million USD)'] > 1]
-    graph = filter_by_country(df, country_ID)
+    if intralayer:
+        graph = filter_by_country_intralayer(df, country_ID)
+    else:
+        graph = filter_by_country_interlayer(df, country_ID)
     return density(graph)
 
 
-def get_density_by_year_by_sector(year, sector_ID):
+def get_density_by_year_by_sector(year, sector_ID, intralayer=True):
     df = load_transformed_data_to_dataframe(f"./Datasets/OECD_Transformed/OECD_{year}.csv")
-    df = df[df['Value (million USD)'] > 1]
-    graph = filter_by_sector(df, sector_ID)
-    return edge_betweenness_centrality(graph)
+    df = df[df['Value (million USD)'] > 10]
+    if intralayer:
+        graph = filter_by_sector_intralayer(df, sector_ID)
+    else:
+        graph = filter_by_sector_interlayer(df, sector_ID)
+    return density(graph)
+
 
 
 def get_network_country_yearly(df):
