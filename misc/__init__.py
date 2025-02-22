@@ -30,4 +30,7 @@ def density():
     ninth_graph(intralayer=True)
     eighth_graph(intralayer=False)
     ninth_graph(intralayer=False)
-    # tenth_graph()
+
+
+def homophily():
+    tenth_graph()

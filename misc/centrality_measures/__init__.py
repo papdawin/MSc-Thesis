@@ -140,9 +140,7 @@ def eighth_graph(intralayer=True):
             subres.append(density)
         resdf.append(subres)
     df = pd.DataFrame(resdf)
-    print(df)
     df_transposed = df.T
-    print(df_transposed)
     fig = go.Figure()
     for idx, year_df in df_transposed.iterrows():
         fig.add_trace(go.Scatter(x=year_range, y=year_df, mode='lines+markers', name=country_map[country_list[idx]]))
@@ -169,4 +167,7 @@ def ninth_graph(intralayer=True):
 
 
 def tenth_graph():
-    pass
+    homophily_values = [23.22926, 22.01843, 22.74303, 25.57955, 25.91403, 28.93546, 30.30562, 31.20538, 30.42009, 28.24760, 27.10436, 25.94597, 22.45714, 23.39856, 23.59444, 23.65728, 24.71357, 23.39074, 29.64172, 31.68252, 33.91715, 41.20315, 50.56862, 52.64382, 54.23974, 55.78846]
+    fig = go.Figure(data=go.Scatter(x=list(range(1995, 2021)), y=homophily_values))
+    fig.show()
+

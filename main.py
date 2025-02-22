@@ -1,5 +1,6 @@
 from misc import *
 
+
 uri = "neo4j://localhost"
 username = "neo4j"
 password = "Admin123"
@@ -16,8 +17,9 @@ password = "Admin123"
 # betweenness_centrality()
 # harmonic_centrality()
 # page_rank()
-# edge_betweenness_centrality() # not implemented
-density()
+# edge_betweenness_centrality()
+# density()
+
 
 
 
