@@ -19,8 +19,9 @@ password = "Admin123"
 # page_rank()
 # edge_betweenness_centrality()
 # density()
-
-
+# louvain()
+# core_periphery()
+community_change_detection()
 
 
 

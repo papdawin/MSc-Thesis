@@ -1,6 +1,7 @@
 from .database_operations import *
 from .localmemory_operations import *
 from .centrality_measures import *
+from .community_detection import *
 
 
 def degree_centrality():
@@ -34,3 +35,17 @@ def density():
 
 def homophily():
     tenth_graph()
+
+
+def louvain():
+    eleventh_graph()
+    twelfth_graph()
+
+
+def core_periphery():
+    thirteenth_graph()
+
+
+def community_change_detection():
+    # fourteenth_graph()
+    fifteenth_graph()
