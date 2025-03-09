@@ -1,5 +1,5 @@
 from .multilayer import get_louvain_by_year_multilayer
-from .singelayer import get_louvain_by_year, get_corep_by_year
+from .singelayer import get_louvain_by_year, get_corep_by_year, get_graph_by_year
 from plotly.subplots import make_subplots
 from ..localmemory_operations import load_csv
 import matplotlib.pyplot as plt
@@ -142,3 +142,115 @@ def fifteenth_graph():
     print("\n🚨 Detected Shocks:")
     for y1, y2, j in shocks:
         print(f"Significant structural change detected: {y1} → {y2} (Jaccard: {j:.3f})")
+
+
+import networkx as nx
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from sklearn.preprocessing import StandardScaler
+import pickle
+
+
+class Autoencoder(nn.Module):
+    def __init__(self, input_dim):
+        super(Autoencoder, self).__init__()
+        self.encoder = nn.Sequential(
+            nn.Linear(input_dim, 4),
+            nn.ReLU(),
+            nn.Linear(4, 1),
+            # nn.ReLU(),
+            # nn.Linear(8, 4)
+        )
+        self.decoder = nn.Sequential(
+            # nn.Linear(4, 8),
+            # nn.ReLU(),
+            nn.Linear(1, 4),
+            nn.ReLU(),
+            nn.Linear(4, input_dim)
+        )
+
+    def forward(self, x):
+        encoded = self.encoder(x)
+        decoded = self.decoder(encoded)
+        return decoded
+
+
+def extract_features(graph):
+    graph.remove_edges_from(nx.selfloop_edges(graph))
+
+    degrees = dict(graph.degree())
+    strengths = dict(graph.degree(weight='weight'))
+    clustering = nx.clustering(graph)
+    betweenness = nx.betweenness_centrality(graph)
+    pagerank = nx.pagerank(graph, alpha=0.85)
+    eigenvector = nx.eigenvector_centrality(graph, max_iter=1000)
+    k_core = nx.core_number(graph)
+
+    feature_matrix = np.array([
+        [
+            degrees[node], strengths[node], clustering[node], betweenness[node],
+            pagerank[node], eigenvector[node], k_core[node]
+        ]
+        for node in graph.nodes()
+    ])
+    return feature_matrix
+
+def sixteenth_graph():
+    years = list(range(1995, 2021))
+    trade_graphs = {}
+    for year in years:
+        trade_graphs[year] = get_graph_by_year(year)
+
+    features_per_year = {year: extract_features(graph) for year, graph in trade_graphs.items()}
+
+    # with open("stuff.pkl", "wb") as f:
+    #     pickle.dump(features_per_year, f)
+    # with open("stuff.pkl", "rb") as f:
+    #     features_per_year = pickle.load(f)
+
+    scaler = StandardScaler()
+    all_features = np.vstack(list(features_per_year.values()))
+    scaler.fit(all_features)
+    for year in features_per_year:
+        features_per_year[year] = scaler.transform(features_per_year[year])
+
+    input_dim = 7
+    autoencoder = Autoencoder(input_dim)
+    criterion = nn.MSELoss()
+    optimizer = optim.Adam(autoencoder.parameters(), lr=0.001)
+
+    X_train = torch.tensor(np.vstack(list(features_per_year.values())), dtype=torch.float32)
+
+    epochs = 500
+    for epoch in range(epochs):
+        optimizer.zero_grad()
+        outputs = autoencoder(X_train)
+        loss = criterion(outputs, X_train)
+        loss.backward()
+        optimizer.step()
+        if epoch % 10 == 0:
+            print(f"Epoch {epoch}: Loss = {loss.item()}")
+
+    reconstruction_errors = {}
+    with torch.no_grad():
+        for year in years:
+            X_test = torch.tensor(features_per_year[year], dtype=torch.float32)
+            reconstructed = autoencoder(X_test)
+            error = torch.mean((X_test - reconstructed) ** 2, axis=1).numpy()
+            reconstruction_errors[year] = np.mean(error)
+
+    error_values = np.array(list(reconstruction_errors.values()))
+    mean_error = np.mean(error_values)
+    std_error = np.std(error_values)
+    threshold = mean_error + 1.5 * std_error  # Define anomaly threshold
+
+    shocks = [year for year in years if reconstruction_errors[year] > threshold]
+
+    plt.figure(figsize=(10, 5))
+    plt.plot(years, error_values, marker="o", label="Reconstruction Error")
+    plt.xlabel("Year")
+    plt.ylabel("Reconstruction Error")
+    plt.title("Autoencoder-Based Shock Detection")
+    plt.legend()
+    plt.show()

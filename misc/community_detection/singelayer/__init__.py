@@ -16,3 +16,7 @@ def get_corep_by_year(year):
     print(nx.is_connected(graph))
     return corep(graph)
 
+def get_graph_by_year(year):
+    df = load_transformed_data_to_dataframe(f"./Datasets/OECD_Original/ICIO2023_{year}.csv")
+    graph = create_graph_from_dataframe(df)
+    return graph
