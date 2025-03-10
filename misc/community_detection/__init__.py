@@ -7,6 +7,12 @@ import seaborn as sns
 import pandas as pd
 from scipy.cluster.hierarchy import linkage, dendrogram
 import numpy as np
+import networkx as nx
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from sklearn.preprocessing import StandardScaler
+import pickle
 
 sector_map = load_csv("./Datasets/sector_LUT.csv", "\ufeffID", "Code")
 country_map = load_csv("./Datasets/country_LUT.csv", "\ufeffID", "Code")
@@ -144,14 +150,6 @@ def fifteenth_graph():
         print(f"Significant structural change detected: {y1} → {y2} (Jaccard: {j:.3f})")
 
 
-import networkx as nx
-import torch
-import torch.nn as nn
-import torch.optim as optim
-from sklearn.preprocessing import StandardScaler
-import pickle
-
-
 class Autoencoder(nn.Module):
     def __init__(self, input_dim):
         super(Autoencoder, self).__init__()
@@ -195,6 +193,7 @@ def extract_features(graph):
         for node in graph.nodes()
     ])
     return feature_matrix
+
 
 def sixteenth_graph():
     years = list(range(1995, 2021))

@@ -21,8 +21,9 @@ password = "Admin123"
 # density()
 # louvain()
 # core_periphery()
-community_change_detection()
-
+# community_change_detection()
+# shock_analysis()
+autoencoder_shock_detection()
 
 
 

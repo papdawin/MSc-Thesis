@@ -47,6 +47,12 @@ def core_periphery():
 
 
 def community_change_detection():
-    # fourteenth_graph()
-    # fifteenth_graph()
+    fourteenth_graph()
+
+
+def shock_analysis():
+    fifteenth_graph()
+
+
+def autoencoder_shock_detection():
     sixteenth_graph()
