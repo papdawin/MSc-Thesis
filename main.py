@@ -23,8 +23,8 @@ password = "Admin123"
 # core_periphery()
 # community_change_detection()
 # shock_analysis()
-autoencoder_shock_detection()
-
+# autoencoder_shock_detection()
+block_change_prediction()
 
 
 

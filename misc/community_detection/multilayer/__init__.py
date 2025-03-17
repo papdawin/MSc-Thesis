@@ -12,3 +12,8 @@ def get_louvain_by_year_multilayer(year):
     graph = aggregate_by_country(df)
     return louvain(graph)
 
+def get_graph_by_year_multilayer(year):
+    df = load_transformed_data_to_dataframe(f"./Datasets/OECD_Transformed/OECD_{year}.csv")
+    df = df[df['Value (million USD)'] > 1]
+    graph = aggregate_by_country(df)
+    return graph

@@ -56,3 +56,7 @@ def shock_analysis():
 
 def autoencoder_shock_detection():
     sixteenth_graph()
+
+
+def block_change_prediction():
+    seventeenth_graph()

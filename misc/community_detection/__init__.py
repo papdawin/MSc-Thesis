@@ -1,4 +1,4 @@
-from .multilayer import get_louvain_by_year_multilayer
+from .multilayer import get_louvain_by_year_multilayer, get_graph_by_year_multilayer
 from .singelayer import get_louvain_by_year, get_corep_by_year, get_graph_by_year
 from plotly.subplots import make_subplots
 from ..localmemory_operations import load_csv
@@ -13,6 +13,10 @@ import torch.nn as nn
 import torch.optim as optim
 from sklearn.preprocessing import StandardScaler
 import pickle
+from node2vec import Node2Vec
+from sklearn.cluster import KMeans
+from sklearn.manifold import TSNE
+import os
 
 sector_map = load_csv("./Datasets/sector_LUT.csv", "\ufeffID", "Code")
 country_map = load_csv("./Datasets/country_LUT.csv", "\ufeffID", "Code")
@@ -37,7 +41,7 @@ def eleventh_graph():
     linkage_matrix = linkage(table.fillna(0), method='ward')
 
     plt.figure(figsize=(12, 8))
-    g = sns.clustermap(table, cmap='coolwarm', linewidths=0.5, linecolor='gray',method='ward',
+    g = sns.clustermap(table, cmap='coolwarm', linewidths=0.5, linecolor='gray', method='ward',
                        figsize=(12, 8))
     plt.title('Clustering Heatmap of Country Codes and Categories')
     plt.show()
@@ -253,3 +257,78 @@ def sixteenth_graph():
     plt.title("Autoencoder-Based Shock Detection")
     plt.legend()
     plt.show()
+
+
+def predict_commercial_block_changes(graph_dict, dimensions=64, walk_length=30, num_walks=200, p=1, q=1, num_clusters=5,
+                                     embedding_dir="embeddings"):
+    cluster_results = {}
+    os.makedirs(embedding_dir, exist_ok=True)
+
+    all_embeddings = []
+    all_nodes = []
+    year_markers = []
+
+    for year, G in graph_dict.items():
+        print(f"Processing year {year}...")
+        embedding_file = os.path.join(embedding_dir, f"embeddings_{year}.npy")
+
+        if os.path.exists(embedding_file):
+            print(f"Loading existing embeddings for year {year}...")
+            embeddings = np.load(embedding_file)
+        else:
+            print("Generating new embeddings...")
+            node2vec = Node2Vec(G, dimensions=dimensions, walk_length=walk_length, num_walks=num_walks, p=p, q=q)
+            model = node2vec.fit(window=10, min_count=1, batch_words=4)
+
+            nodes = list(G.nodes)
+            embeddings = np.array([model.wv[str(node)] for node in nodes])
+
+            np.save(embedding_file, embeddings)
+            print(f"Embeddings saved to {embedding_file}")
+
+        nodes = list(G.nodes)
+        filtered_indices = [i for i, node in enumerate(nodes) if str(node) in ["31", "59", "19", "66"]] # V4-ek
+
+        cluster_results[year] = {nodes[i]: year for i in filtered_indices}
+
+        all_embeddings.append(embeddings[filtered_indices])
+        all_nodes.extend([nodes[i] for i in filtered_indices])
+        year_markers.extend([year] * len(filtered_indices))
+
+    all_embeddings = np.vstack(all_embeddings)
+
+    tsne = TSNE(n_components=2, random_state=42, perplexity=5)
+    reduced_embeddings = tsne.fit_transform(all_embeddings)
+
+    plt.figure(figsize=(12, 10))
+
+    scatter = plt.scatter(reduced_embeddings[:, 0], reduced_embeddings[:, 1], c=year_markers, cmap='plasma', alpha=0.7)
+    plt.colorbar(scatter, label='Year')
+
+    year_markers = np.array(year_markers)
+    for year in np.unique(year_markers):
+        year_indices = np.where(year_markers == year)[0]
+        year_points = reduced_embeddings[year_indices]
+
+        for i in range(len(year_points)):
+            for j in range(i + 1, len(year_points)):
+                plt.plot([year_points[i, 0], year_points[j, 0]],
+                         [year_points[i, 1], year_points[j, 1]],
+                         color='gray', alpha=0.3, linewidth=0.5)
+
+    for i, node in enumerate(all_nodes):
+        translated_name = country_map[int(str(node))]
+        plt.annotate(translated_name, (reduced_embeddings[i, 0], reduced_embeddings[i, 1]), fontsize=8, alpha=0.7)
+
+    plt.title('Commercial Block Changes')
+    plt.xlabel('t-SNE Dimension 1')
+    plt.ylabel('t-SNE Dimension 2')
+    plt.show()
+
+    return cluster_results
+
+
+def seventeenth_graph():
+    years = list(range(2002, 2017, 3))
+    trade_graphs = {year: get_graph_by_year_multilayer(year) for year in years}
+    predict_commercial_block_changes(trade_graphs)
