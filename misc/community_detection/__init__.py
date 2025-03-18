@@ -17,6 +17,9 @@ from node2vec import Node2Vec
 from sklearn.cluster import KMeans
 from sklearn.manifold import TSNE
 import os
+from scipy.signal import find_peaks
+from scipy.signal import argrelextrema
+import random
 
 sector_map = load_csv("./Datasets/sector_LUT.csv", "\ufeffID", "Code")
 country_map = load_csv("./Datasets/country_LUT.csv", "\ufeffID", "Code")
@@ -200,17 +203,21 @@ def extract_features(graph):
 
 
 def sixteenth_graph():
+    # seed = 52
+    # random.seed(seed)
+    # np.random.seed(seed)
+    # torch.manual_seed(seed)
     years = list(range(1995, 2021))
-    trade_graphs = {}
-    for year in years:
-        trade_graphs[year] = get_graph_by_year(year)
-
-    features_per_year = {year: extract_features(graph) for year, graph in trade_graphs.items()}
+    # trade_graphs = {}
+    # for year in years:
+    #     trade_graphs[year] = get_graph_by_year(year)
+    #
+    # features_per_year = {year: extract_features(graph) for year, graph in trade_graphs.items()}
 
     # with open("stuff.pkl", "wb") as f:
     #     pickle.dump(features_per_year, f)
-    # with open("stuff.pkl", "rb") as f:
-    #     features_per_year = pickle.load(f)
+    with open("person.pkl", "rb") as f:
+        features_per_year = pickle.load(f)
 
     scaler = StandardScaler()
     all_features = np.vstack(list(features_per_year.values()))
@@ -249,12 +256,15 @@ def sixteenth_graph():
     threshold = mean_error + 1.5 * std_error  # Define anomaly threshold
 
     shocks = [year for year in years if reconstruction_errors[year] > threshold]
+    peaks = argrelextrema(error_values, np.greater)[0]
 
     plt.figure(figsize=(10, 5))
     plt.plot(years, error_values, marker="o", label="Reconstruction Error")
+    plt.scatter(np.array(years)[peaks], error_values[peaks], color="red", label="Local Maxima", zorder=3)
+    # plt.axhline(y=threshold, color="gray", linestyle="--", label="Anomaly Threshold")
     plt.xlabel("Year")
     plt.ylabel("Reconstruction Error")
-    plt.title("Autoencoder-Based Shock Detection")
+    plt.title("Autoencoder-Based Shock Detection with Local Maxima")
     plt.legend()
     plt.show()
 
