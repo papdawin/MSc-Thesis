@@ -1,5 +1,6 @@
+from torch_geometric.utils import to_networkx
 from .multilayer import get_louvain_by_year_multilayer, get_graph_by_year_multilayer
-from .singelayer import get_louvain_by_year, get_corep_by_year, get_graph_by_year
+from .singelayer import get_louvain_by_year, get_corep_by_year, get_graph_by_year, convert_to_pyg_data
 from plotly.subplots import make_subplots
 from ..localmemory_operations import load_csv
 import matplotlib.pyplot as plt
@@ -20,6 +21,12 @@ import os
 from scipy.signal import find_peaks
 from scipy.signal import argrelextrema
 import random
+import torch
+import torch.nn.functional as F
+from torch_geometric.data import Data
+from torch_geometric.nn import GCNConv
+from torch_geometric.utils import to_networkx, to_dense_adj
+from sklearn.cluster import KMeans
 
 sector_map = load_csv("./Datasets/sector_LUT.csv", "\ufeffID", "Code")
 country_map = load_csv("./Datasets/country_LUT.csv", "\ufeffID", "Code")
@@ -342,3 +349,133 @@ def seventeenth_graph():
     years = list(range(2002, 2017, 3))
     trade_graphs = {year: get_graph_by_year_multilayer(year) for year in years}
     predict_commercial_block_changes(trade_graphs)
+
+
+def eighteenth_graph():
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    years = list(range(1995, 2021))
+    trade_graphs = {}
+    #
+    # # Load and preprocess graphs
+    # for year in years:
+    #     graph = get_graph_by_year(year)
+    #     pyg_data = convert_to_pyg_data(graph, country_map, sector_map)
+    #     trade_graphs[year] = pyg_data.to(device)
+    #
+    # # Train model
+    # input_dim = trade_graphs[years[0]].x.shape[1]
+    # model = train_model(trade_graphs, years, device, input_dim)
+
+    model_path = "gnn_model.pth"
+    # torch.save(model.state_dict(), model_path)
+
+    # input_dim = trade_graphs[years[0]].x.shape[1]
+    model = GNN(79, 46).to(device)
+    model.load_state_dict(torch.load(model_path))
+    print("Loaded", model_path)
+
+    for year in years:
+        graph = get_graph_by_year(year)
+
+        pyg_data = convert_to_pyg_data(graph, country_map, sector_map)
+        trade_graphs[year] = pyg_data.to(device)
+
+    labels = ["China", "Japan", "Korea", "Taiwan", "United States"]
+    # First part country, second sector eg: 1*1 ARG_A01_02
+    selected_indices = [13 * 17, 39 * 17, 42 * 17, 72 * 17, 74 * 17]
+    visualize_embeddings(model, trade_graphs, years, device, labels, selected_indices)
+
+
+class GNN(torch.nn.Module):
+    def __init__(self, num_countries, num_sectors, embed_dim=16, hidden_dim=64):
+        super().__init__()
+        # Embedding layers for categorical features
+        self.country_embed = torch.nn.Embedding(num_countries, embed_dim)
+        self.sector_embed = torch.nn.Embedding(num_sectors, embed_dim)
+
+        # GCN layers (input_dim = embed_dim * 2)
+        self.conv1 = GCNConv(embed_dim * 2, hidden_dim)
+        self.conv2 = GCNConv(hidden_dim, embed_dim)
+
+    def forward(self, data):
+        # Get embeddings for country and sector indices
+        country_emb = self.country_embed(data.x[:, 0])  # Country indices
+        sector_emb = self.sector_embed(data.x[:, 1])  # Sector indices
+
+        # Concatenate embeddings
+        x = torch.cat([country_emb, sector_emb], dim=1)
+
+        # GCN operations
+        x = self.conv1(x, data.edge_index, data.edge_attr)
+        x = F.relu(x)
+        x = self.conv2(x, data.edge_index, data.edge_attr)
+
+        return x
+
+
+def train_model(trade_graphs, years, device, input_dim, hidden_dim=64, embed_dim=32, num_epochs=100):
+    model = GNN(79, 46).to(device)
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
+
+    for epoch in range(num_epochs):
+        model.train()
+        total_loss = 0
+        for year in years:
+            data = trade_graphs[year]
+            optimizer.zero_grad()
+            embeddings = model(data)
+            src, dst = data.edge_index
+            pred_weights = (embeddings[src] * embeddings[dst]).sum(dim=1)
+            true_weights = data.edge_attr
+            loss = F.mse_loss(pred_weights, true_weights)
+            loss.backward()
+            optimizer.step()
+            total_loss += loss.item()
+        print(f"Epoch {epoch}, Loss: {total_loss / len(years)}")
+    return model
+
+
+def visualize_embeddings(model, trade_graphs, years, device, labels, selected_indices):
+    embeddings_list = []
+    year_labels = []
+
+    for year in years:
+        data = trade_graphs[year].to(device)
+        with torch.no_grad():
+            embeddings = model(data).cpu().numpy()
+
+        embeddings = embeddings[selected_indices]
+        embeddings_list.append(embeddings)
+        year_labels.extend([year] * embeddings.shape[0])
+
+    X = np.vstack(embeddings_list)
+    years_array = np.array(year_labels)
+
+    # Apply t-SNE
+    tsne = TSNE(n_components=2, perplexity=3, random_state=42)
+    tsne_results = tsne.fit_transform(X)
+
+    # Plot
+    plt.figure(figsize=(12, 8))
+    scatter = plt.scatter(tsne_results[:, 0], tsne_results[:, 1], c=years_array, cmap='jet', alpha=0.6)
+
+    # year_markers = np.array(years_array)
+    for year in np.unique(years_array):
+        year_indices = np.where(years_array == year)[0]
+        year_points = tsne_results[year_indices]
+
+        for i in range(len(year_points)):
+            for j in range(i + 1, len(year_points)):
+                plt.plot([year_points[i, 0], year_points[j, 0]],
+                         [year_points[i, 1], year_points[j, 1]],
+                         color='gray', alpha=0.3, linewidth=0.5)
+
+    # Annotate points with labels
+    for i, label in enumerate(labels*len(years)):
+        plt.text(tsne_results[i, 0], tsne_results[i, 1], label, fontsize=12, ha='right', va='bottom')
+
+    plt.colorbar(scatter, label='country_sector')
+    plt.title("t-SNE Visualization of Node Embeddings (1995-2019)")
+    plt.xlabel("t-SNE 1")
+    plt.ylabel("t-SNE 2")
+    plt.show()

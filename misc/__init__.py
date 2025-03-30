@@ -60,3 +60,7 @@ def autoencoder_shock_detection():
 
 def block_change_prediction():
     seventeenth_graph()
+
+
+def gnn_community_detection():
+    eighteenth_graph()
