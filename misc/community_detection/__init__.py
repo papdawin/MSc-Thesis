@@ -451,15 +451,12 @@ def visualize_embeddings(model, trade_graphs, years, device, labels, selected_in
     X = np.vstack(embeddings_list)
     years_array = np.array(year_labels)
 
-    # Apply t-SNE
     tsne = TSNE(n_components=2, perplexity=3, random_state=42)
     tsne_results = tsne.fit_transform(X)
 
-    # Plot
     plt.figure(figsize=(12, 8))
     scatter = plt.scatter(tsne_results[:, 0], tsne_results[:, 1], c=years_array, cmap='jet', alpha=0.6)
 
-    # year_markers = np.array(years_array)
     for year in np.unique(years_array):
         year_indices = np.where(years_array == year)[0]
         year_points = tsne_results[year_indices]
@@ -470,7 +467,6 @@ def visualize_embeddings(model, trade_graphs, years, device, labels, selected_in
                          [year_points[i, 1], year_points[j, 1]],
                          color='gray', alpha=0.3, linewidth=0.5)
 
-    # Annotate points with labels
     for i, label in enumerate(labels*len(years)):
         plt.text(tsne_results[i, 0], tsne_results[i, 1], label, fontsize=12, ha='right', va='bottom')
 
@@ -479,3 +475,153 @@ def visualize_embeddings(model, trade_graphs, years, device, labels, selected_in
     plt.xlabel("t-SNE 1")
     plt.ylabel("t-SNE 2")
     plt.show()
+
+
+class GNN_Autoencoder(torch.nn.Module):
+    def __init__(self, num_countries, num_sectors, embed_dim=16, hidden_dim=64):
+        super().__init__()
+        self.country_embed = torch.nn.Embedding(num_countries, embed_dim)
+        self.sector_embed = torch.nn.Embedding(num_sectors, embed_dim)
+
+        self.encoder = torch.nn.Sequential(
+            GCNConv(embed_dim * 2, hidden_dim),
+            torch.nn.ReLU(),
+            GCNConv(hidden_dim, embed_dim)
+        )
+
+    def forward(self, data):
+        country_emb = self.country_embed(data.x[:, 0])
+        sector_emb = self.sector_embed(data.x[:, 1])
+        x = torch.cat([country_emb, sector_emb], dim=1)
+        x = self.encoder[0](x, data.edge_index, data.edge_attr)
+        x = self.encoder[1](x)
+        x = self.encoder[2](x, data.edge_index, data.edge_attr)
+        return x
+
+    def reconstruct_edges(self, embeddings, edge_index):
+        src, dst = edge_index
+        return (embeddings[src] * embeddings[dst]).sum(dim=1)
+
+
+def train_autoencoder(trade_graphs, years, device, num_epochs=100):
+    model = GNN_Autoencoder(79, 46).to(device)
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
+
+    for epoch in range(num_epochs):
+        model.train()
+        total_loss = 0
+        for year in years:
+            data = trade_graphs[year]
+            optimizer.zero_grad()
+            embeddings = model(data)
+            pred_weights = model.reconstruct_edges(embeddings, data.edge_index)
+            loss = F.mse_loss(pred_weights, data.edge_attr)
+            loss.backward()
+            optimizer.step()
+            total_loss += loss.item()
+        print(f"[Epoch {epoch}] Loss: {total_loss / len(years):.4f}")
+    return model
+
+
+def detect_anomalies(model, trade_graphs, years, device):
+    model.eval()
+    anomaly_scores = {}
+
+    with torch.no_grad():
+        for year in years:
+            data = trade_graphs[year].to(device)
+            embeddings = model(data)
+            pred = model.reconstruct_edges(embeddings, data.edge_index)
+            loss = F.mse_loss(pred, data.edge_attr, reduction='none')
+            anomaly_scores[year] = loss.cpu().numpy()
+
+    return anomaly_scores
+
+
+def nineteenth_graph():
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    years = list(range(1995, 2021))
+    trade_graphs = {}
+
+    for year in years:
+        graph = get_graph_by_year(year)
+        pyg_data = convert_to_pyg_data(graph, country_map, sector_map)
+        trade_graphs[year] = pyg_data.to(device)
+
+    model = train_autoencoder(trade_graphs, years, device)
+
+    model_path = "autoencoder_gnn.pth"
+    # torch.save(model.state_dict(), model_path)
+    # model = GNN(79, 46).to(device)
+    # model.load_state_dict(torch.load(model_path))
+    # print("Loaded", model_path)
+
+    anomaly_scores = detect_anomalies(model, trade_graphs, years, device)
+    for yr, scr in anomaly_scores.items():
+        print(yr, len(scr))
+
+    shock_years, stats, z_scores = detect_shock_years(anomaly_scores, method='percentile', z_threshold=1.5)
+
+    print("Detected shock years:", shock_years)
+    print(stats)
+    print(z_scores)
+    plot_anomaly_trends(stats, shock_years)
+    for y in shock_years:
+        print(f"{y}: Mean anomaly score = {stats[y]:.2e}, Z-score = {z_scores[y]:.2f}")
+    print(anomaly_scores)
+
+
+def plot_anomaly_trends(stats, shock_years, title="GNN autoencoder anomaly detection"):
+    years = sorted(stats.keys())
+    values = [stats[year] for year in years]
+
+    plt.figure(figsize=(12, 6))
+    plt.plot(years, values, label='95th percentile anomaly score', color='blue', linewidth=2)
+
+    shock_x = [year for year in years if year in shock_years]
+    shock_y = [stats[year] for year in shock_x]
+    plt.scatter(shock_x, shock_y, color='red', s=80, label='Shock Years', zorder=5)
+
+    plt.xlabel('Year')
+    plt.ylabel('95th percentile anomaly score')
+    plt.title(title)
+    plt.grid(True, linestyle='--', alpha=0.5)
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+
+
+def detect_shock_years(anomaly_scores, method='mean', z_threshold=2.0):
+    summary_stats = {}
+    for year, scores in anomaly_scores.items():
+        if method == 'mean':
+            summary_stats[year] = np.mean(scores)
+        elif method == 'median':
+            summary_stats[year] = np.median(scores)
+        elif method == 'percentile':
+            summary_stats[year] = np.percentile(scores, 95)
+        else:
+            raise ValueError("Method must be 'mean', 'median', or 'percentile'")
+
+    sorted_years = sorted(summary_stats.keys())
+    diffs = []
+    for i in range(1, len(sorted_years)):
+        y_prev = sorted_years[i - 1]
+        y_curr = sorted_years[i]
+        diff = summary_stats[y_curr] - summary_stats[y_prev]
+        diffs.append(diff)
+
+    diffs = np.array(diffs)
+    mean_diff = np.mean(diffs)
+    std_diff = np.std(diffs)
+
+    z_scores = {}
+    shock_years = []
+    for i, diff in enumerate(diffs):
+        year = sorted_years[i + 1]
+        z = (diff - mean_diff) / std_diff if std_diff > 0 else 0
+        z_scores[year] = z
+        if abs(z) > z_threshold:
+            shock_years.append(year)
+
+    return shock_years, summary_stats, z_scores

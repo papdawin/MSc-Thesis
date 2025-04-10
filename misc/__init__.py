@@ -63,4 +63,5 @@ def block_change_prediction():
 
 
 def gnn_community_detection():
-    eighteenth_graph()
+    # eighteenth_graph()
+    nineteenth_graph()
