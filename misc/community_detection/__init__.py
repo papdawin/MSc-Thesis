@@ -27,6 +27,8 @@ from torch_geometric.data import Data
 from torch_geometric.nn import GCNConv
 from torch_geometric.utils import to_networkx, to_dense_adj
 from sklearn.cluster import KMeans
+from sklearn.decomposition import PCA
+from collections import Counter
 
 sector_map = load_csv("./Datasets/sector_LUT.csv", "\ufeffID", "Code")
 country_map = load_csv("./Datasets/country_LUT.csv", "\ufeffID", "Code")
@@ -159,7 +161,7 @@ def fifteenth_graph():
     plt.show()
 
     # Print detected shocks
-    print("\n🚨 Detected Shocks:")
+    print("Detected Shocks:")
     for y1, y2, j in shocks:
         print(f"Significant structural change detected: {y1} → {y2} (Jaccard: {j:.3f})")
 
@@ -353,7 +355,7 @@ def seventeenth_graph():
 
 def eighteenth_graph():
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    years = list(range(1995, 2021))
+    years = list(range(2010, 2021, 2))
     trade_graphs = {}
     #
     # # Load and preprocess graphs
@@ -389,7 +391,6 @@ def eighteenth_graph():
 class GNN(torch.nn.Module):
     def __init__(self, num_countries, num_sectors, embed_dim=16, hidden_dim=64):
         super().__init__()
-        # Embedding layers for categorical features
         self.country_embed = torch.nn.Embedding(num_countries, embed_dim)
         self.sector_embed = torch.nn.Embedding(num_sectors, embed_dim)
 
@@ -398,14 +399,11 @@ class GNN(torch.nn.Module):
         self.conv2 = GCNConv(hidden_dim, embed_dim)
 
     def forward(self, data):
-        # Get embeddings for country and sector indices
         country_emb = self.country_embed(data.x[:, 0])  # Country indices
         sector_emb = self.sector_embed(data.x[:, 1])  # Sector indices
 
-        # Concatenate embeddings
         x = torch.cat([country_emb, sector_emb], dim=1)
 
-        # GCN operations
         x = self.conv1(x, data.edge_index, data.edge_attr)
         x = F.relu(x)
         x = self.conv2(x, data.edge_index, data.edge_attr)
@@ -625,3 +623,81 @@ def detect_shock_years(anomaly_scores, method='mean', z_threshold=2.0):
             shock_years.append(year)
 
     return shock_years, summary_stats, z_scores
+
+
+def detect_communities(model, graph_data, device, num_clusters=5):
+    model.eval()
+    with torch.no_grad():
+        embeddings = model(graph_data.to(device)).cpu().numpy()
+
+    kmeans = KMeans(n_clusters=num_clusters, random_state=13)
+    cluster_labels = kmeans.fit_predict(embeddings)
+
+    return embeddings, cluster_labels
+
+
+def visualize_communities(embeddings, cluster_labels, title="Community Detection via GNN Embeddings"):
+    pca = PCA(n_components=2)
+    reduced_embeddings = pca.fit_transform(embeddings)
+
+    plt.figure(figsize=(10, 8))
+    scatter = plt.scatter(reduced_embeddings[:, 0], reduced_embeddings[:, 1], c=cluster_labels, cmap='tab10', alpha=0.7)
+    plt.title(title)
+    plt.xlabel("PCA 1")
+    plt.ylabel("PCA 2")
+    plt.colorbar(scatter, label="Community Cluster")
+    plt.show()
+
+
+def visualize_communities_over_years_subplots(model, trade_graphs, years, device, num_clusters=5):
+    num_years = len(years)
+    ncols = 3
+    nrows = (num_years + ncols - 1) // ncols
+
+    fig, axes = plt.subplots(nrows=nrows, ncols=ncols, figsize=(5 * ncols, 4 * nrows))
+    axes = axes.flatten()
+
+    for idx, year in enumerate(years):
+        data = trade_graphs[year]
+        embeddings, cluster_labels = detect_communities(model, data, device, num_clusters=num_clusters)
+
+        label_counts = Counter(cluster_labels)
+
+        print(f"Cluster label counts for year({year})):")
+        for label, count in sorted(label_counts.items()):
+            print(f"Cluster {label}: {count} nodes")
+
+        reducer = PCA(n_components=2)
+        reduced = reducer.fit_transform(embeddings)
+
+        ax = axes[idx]
+        scatter = ax.scatter(reduced[:, 0], reduced[:, 1], c=cluster_labels, cmap='tab10', alpha=0.7)
+        ax.set_title(f"Year {year}")
+        ax.set_xlabel("PCA 1")
+        ax.set_ylabel("PCA 2")
+
+    for j in range(idx + 1, len(axes)):
+        fig.delaxes(axes[j])
+
+    fig.tight_layout()
+    plt.suptitle("GNN-based Community Detection per Year", fontsize=16, y=1.02)
+    plt.show()
+
+
+def twentieth_graph():
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    years = list(range(2005, 2011))
+
+    trade_graphs = {}
+
+    model_path = "gnn_model.pth"
+    model = GNN(79, 46).to(device)
+    model.load_state_dict(torch.load(model_path))
+    print("Loaded", model_path)
+
+    for year in years:
+        graph = get_graph_by_year(year)
+        pyg_data = convert_to_pyg_data(graph, country_map, sector_map)
+        trade_graphs[year] = pyg_data.to(device)
+
+    visualize_communities_over_years_subplots(model, trade_graphs, years, device, num_clusters=8)
